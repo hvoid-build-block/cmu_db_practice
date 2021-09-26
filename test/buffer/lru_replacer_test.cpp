@@ -29,7 +29,7 @@ TEST(LRUReplacerTest, SampleTest) {
   lru_replacer.Unpin(4);
   lru_replacer.Unpin(5);
   lru_replacer.Unpin(6);
-//  lru_replacer.Unpin(1);
+  lru_replacer.Unpin(1);
   EXPECT_EQ(6, lru_replacer.Size());
 
   // Scenario: get three victims from the lru.

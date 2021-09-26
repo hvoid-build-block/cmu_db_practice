@@ -15,67 +15,61 @@
 namespace bustub {
 
 LRUReplacer::LRUReplacer(size_t num_pages) {
-  limit_pages = num_pages;
-  cur_page_size = 0;
-
-  head = std::make_shared<Node>();
-  tail = std::make_shared<Node>();
-  head->next = tail;
-  tail->prev = head;
+    capacity = num_pages;
 }
 
 LRUReplacer::~LRUReplacer() = default;
 
 bool LRUReplacer::Victim(frame_id_t *frame_id) {
-  lock_guard<std::mutex> lock(latch);
-  if (content_map.empty()) {
-    return false;
-  }
+    const std::lock_guard<mutex_t> guard(mutex_);
 
-  shared_ptr<Node> last = tail->prev;
-  *frame_id = last->val;
-  tail->prev = last->prev;
-  last->prev->next = tail;
-  content_map.erase(*frame_id);
-  return false;
+    if (lst.empty()) {
+        return false;
+    }
+
+    frame_id_t f = lst.front();
+    lst.pop_front();
+
+    auto table_it = table_.find(f);
+
+    if (table_it != table_.end()) {
+        *frame_id = f;
+        table_.erase(table_it);
+        return true;
+    }
+    return false;
 }
 
 void LRUReplacer::Pin(frame_id_t frame_id) {
-  lock_guard<mutex> lock(latch);
-  if (content_map.find(frame_id) == content_map.end()) {
-    return;
-  }
+    const std::lock_guard<mutex_t> guard(mutex_);
 
-  shared_ptr<Node> cur = content_map[frame_id];
-  cur->prev->next = cur->next;
-  cur->next->prev = cur->prev;
-  content_map.erase(frame_id);
-  return;
+    auto table_it = table_.find(frame_id);
+    if (table_it != table_.end()) {
+        lst.erase(table_it->second);
+        table_.erase(table_it);
+    }
 }
 
 void LRUReplacer::Unpin(frame_id_t frame_id) {
-  lock_guard<mutex> lock(latch);
-  shared_ptr<Node> cur;
+    const std::lock_guard<mutex_t> guard(mutex_);
 
-  if (content_map.find(frame_id) != content_map.end()) {
-    cur = content_map[frame_id];
-    shared_ptr<Node> prev = cur->prev;
-    shared_ptr<Node> succ = cur->next;
-    prev->next = succ;
-    succ->prev = prev;
-  } else {
-    cur = std::make_shared<Node>(frame_id);
-  }
+    if (table_.size() >= capacity) {
+        return;
+    }
 
-  shared_ptr<Node> first = head->next;
-  first->prev = cur;
-  cur->prev = head;
-  head->next = cur;
-  cur->next = first;
-  content_map[frame_id] = cur;
-  return;
+    auto table_it = table_.find(frame_id);
+    if (table_it != table_.end()) {
+        return;
+    }
+
+    lst.push_back(frame_id);
+    table_.emplace(frame_id, std::prev(lst.end(), 1));
 }
 
-size_t LRUReplacer::Size() { return content_map.size(); }
+size_t LRUReplacer::Size() {
+    const std::lock_guard<mutex_t> guard(mutex_);
+
+    return table_.size();
+}
 
 }  // namespace bustub
