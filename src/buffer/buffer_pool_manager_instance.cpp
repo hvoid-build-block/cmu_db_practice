@@ -62,6 +62,36 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
   // 2.   Pick a victim page P from either the free list or the replacer. Always pick from the free list first.
   // 3.   Update P's metadata, zero out memory and add P to the page table.
   // 4.   Set the page ID output parameter. Return a pointer to P.
+  const std::lock_guard<std::mutex> guard(latch_);
+
+  auto item_it = page_table_.find(*page_id);
+  frame_id_t frame_id;
+
+  if (item_it != page_table_.end()) {
+    frame_id = item_it->second;
+    Page *frame = &pages_[frame_id];
+    ++frame->pin_count_;
+    replacer_->Pin(frame_id);
+    return frame;
+  }
+
+  if (free_list_.empty()) {
+    bool exist = replacer_->Victim(&frame_id);
+    if (!exist) {
+      return nullptr;
+    }
+  } else {
+    frame_id = free_list_.front();
+    free_list_.pop_front();
+  }
+
+  Page *frame = &pages_[frame_id];
+
+  if (frame->IsDirty()) {
+    disk_manager_->WritePage(frame->)
+  }
+
+
   return nullptr;
 }
 
