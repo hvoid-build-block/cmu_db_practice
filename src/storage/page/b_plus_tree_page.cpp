@@ -20,6 +20,7 @@ namespace bustub {
 bool BPlusTreePage::IsLeafPage() const { return page_type_ == IndexPageType::LEAF_PAGE; }
 bool BPlusTreePage::IsRootPage() const { return page_type_ == IndexPageType::INVALID_INDEX_PAGE; }
 void BPlusTreePage::SetPageType(IndexPageType page_type) {page_type_ = page_type;}
+IndexPageType BPlusTreePage::GetPageType() const { return page_type_; }
 
 /*
  * Helper methods to get/set size (number of key/value pairs stored in that
