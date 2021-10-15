@@ -71,13 +71,18 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
+  std::cout << "Enter Insert" << std::endl;
   {
+    std::cout << "Enter new tree lock" << std::endl;
     const std::lock_guard<std::mutex> guard(root_page_id_latch_);
+    std::cout << "Enter new tree lock - 2" << std::endl;
     if (IsEmpty()) {
+      std::cout << "Start a New Tree" << std::endl;
       StartNewTree(key, value);
       return true;
     }
   }
+  std::cout << "Insert into leaf " << std::endl;
   return InsertIntoLeaf(key, value, transaction);
 }
 /*
@@ -119,8 +124,6 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value, 
 
   int size = node->GetSize();
   int new_size = node->Insert(key, value, comparator_);
-
-  std::cout << "Insert into leaf 1" << std::endl;
 
   // duplicate key
   if (new_size == size) {
@@ -377,6 +380,7 @@ std::pair<Page *, bool> BPLUSTREE_TYPE::FindLeafPageByOperation(const KeyType &k
     page->RLatch();
     is_root_page_id_latched = false;
     root_page_id_latch_.unlock();
+    std::cout << "Unlock latch "
   } else {
     // operation is insert or delete
     page->WLatch();
@@ -385,6 +389,7 @@ std::pair<Page *, bool> BPLUSTREE_TYPE::FindLeafPageByOperation(const KeyType &k
         (operation == Operation::DELETE && node->GetSize() > 2)) {
       is_root_page_id_latched = false;
       root_page_id_latch_.unlock();
+      std::cout << "Unlock latch " << std::endl;
     }
   }
   
